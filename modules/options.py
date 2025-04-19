@@ -10,7 +10,8 @@ class Options:
         self.no_banner = False
         
         # Target options
-        self.pid = None  # Specific process ID to target
+        self.pid_str = None  # Comma-separated process IDs string
+        self.pid_list = []   # List of process IDs after parsing
         self.process_name = None  # Process name to target
         self.dump_all = False  # Dump all memory regions (not just heap/stack)
         
@@ -29,7 +30,7 @@ class Options:
             f"Options:\n"
             f"  Verbose: {self.verbose}\n"
             f"  No Banner: {self.no_banner}\n"
-            f"  PID: {self.pid}\n"
+            f"  PIDs: {', '.join(map(str, self.pid_list)) if self.pid_list else 'None'}\n"
             f"  Process Name: {self.process_name}\n"
             f"  Dump All: {self.dump_all}\n"
             f"  Regex File: {self.regex_file or self.default_regex_file}\n"

@@ -27,8 +27,8 @@ class ArgParser:
         
         # Target options
         target = self.parser.add_argument_group("Target Options")
-        target.add_argument("-p", "--pid", type=int, 
-                          help="Specific process ID to target")
+        target.add_argument("-p", "--pid", type=str, 
+                          help="Process ID(s) to target (comma-separated for multiple PIDs)")
         target.add_argument("-m", "--name", type=str,
                           help="Process name to target (can match multiple processes)")
         target.add_argument("-a", "--all-memory", action="store_true", 
@@ -56,7 +56,7 @@ class ArgParser:
         # Update options based on parsed arguments
         self.options.verbose = args.verbose
         self.options.no_banner = args.no_banner
-        self.options.pid = args.pid
+        self.options.pid_str = args.pid
         self.options.process_name = args.name
         self.options.dump_all = args.all_memory
         self.options.regex_file = args.regex_file
@@ -77,8 +77,18 @@ class ArgParser:
             file_ext = self.options.output_file.split('.')[-1].lower()
             if file_ext in ['html', 'xml']:
                 self.options.output_format = file_ext
+        
+        # Parse comma-separated PIDs if provided
+        self.options.pid_list = []
+        if self.options.pid_str:
+            try:
+                # Split by comma and convert each to integer
+                self.options.pid_list = [int(pid.strip()) for pid in self.options.pid_str.split(',') if pid.strip()]
+            except ValueError:
+                print("[!] Error: Invalid PID format. PIDs must be comma-separated integers.")
+                sys.exit(1)
                 
         # Can't specify both pid and process name
-        if self.options.pid and self.options.process_name:
+        if self.options.pid_str and self.options.process_name:
             print("[!] Error: Cannot specify both PID and process name. Please use only one.")
             sys.exit(1)

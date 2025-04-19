@@ -31,6 +31,9 @@ sudo python memsift.py -a
 # Scan a specific process by PID
 sudo python memsift.py -p 1234
 
+# Scan multiple processes by comma-separated PIDs
+sudo python memsift.py -p 1234,5678,9012
+
 # Scan all processes matching a name
 sudo python memsift.py -m firefox
 

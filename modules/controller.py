@@ -21,25 +21,25 @@ class Controller:
         self.match_count = 0
         self.successful_processes = 0
     
-    def scan_processes_by_name(self, process_name):
-        """Scan processes matching the specified name"""
-        matching_pids = self.process_ops.find_processes_by_name(process_name)
-        
-        if not matching_pids:
-            self.misc.print_error(f"No processes found matching name: {process_name}")
+    def scan_multiple_pids(self, pids):
+        """Scan multiple specific processes by their PIDs"""
+        if not pids:
+            self.misc.print_error("No valid PIDs provided")
             return
             
-        self.misc.print_info(f"Found {len(matching_pids)} processes matching name: {process_name}")
+        self.misc.print_info(f"Scanning {len(pids)} processes: {', '.join(map(str, pids))}")
         
         # Reset counter for successful processes
         self.successful_processes = 0
+        attempted = 0
         
-        # Scan each matching process
-        for pid in matching_pids:
+        # Scan each PID
+        for pid in pids:
             # Skip our own process
             if pid == os.getpid():
                 continue
                 
+            attempted += 1
             try:
                 if self.scan_process(pid):
                     self.successful_processes += 1
@@ -50,7 +50,7 @@ class Controller:
                 if self.options.verbose:
                     self.misc.print_error(f"Error scanning process {pid}: {str(e)}")
         
-        self.misc.print_info(f"Successfully scanned {self.successful_processes} out of {len(matching_pids)} matching processes")
+        self.misc.print_info(f"Successfully scanned {self.successful_processes} out of {attempted} attempted processes")
         
         # Display results
         results = self.regex_lookup.get_results()
@@ -60,6 +60,19 @@ class Controller:
         # Write output to file if specified
         if self.options.output_file:
             self.output.write_to_file(results)
+            
+    def scan_processes_by_name(self, process_name):
+        """Scan processes matching the specified name"""
+        matching_pids = self.process_ops.find_processes_by_name(process_name)
+        
+        if not matching_pids:
+            self.misc.print_error(f"No processes found matching name: {process_name}")
+            return
+            
+        self.misc.print_info(f"Found {len(matching_pids)} processes matching name: {process_name}")
+        
+        # Use the multiple PID scanning method
+        self.scan_multiple_pids(matching_pids)
     
     def scan_all_processes(self):
         """Scan all processes on the system"""

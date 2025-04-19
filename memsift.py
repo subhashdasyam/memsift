@@ -46,9 +46,14 @@ def main():
     controller = Controller(options, regex_lookup, misc)
     
     # Start scanning
-    if options.pid:
-        # Scan specific process
-        controller.scan_process(options.pid)
+    if options.pid_list:
+        # Scan specific PIDs
+        if len(options.pid_list) == 1:
+            # Single PID
+            controller.scan_process(options.pid_list[0])
+        else:
+            # Multiple PIDs
+            controller.scan_multiple_pids(options.pid_list)
     elif options.process_name:
         # Scan processes by name
         controller.scan_processes_by_name(options.process_name)
