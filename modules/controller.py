@@ -20,6 +20,12 @@ class Controller:
         self.scan_count = 0
         self.match_count = 0
         self.successful_processes = 0
+        
+        # Initialize timeline tracker if timeline is enabled
+        self.timeline_tracker = None
+        if options.enable_timeline:
+            from modules.timeline_tracker import TimelineTracker
+            self.timeline_tracker = TimelineTracker(options, misc)
     
     def scan_multiple_pids(self, pids):
         """Scan multiple specific processes by their PIDs"""
@@ -258,6 +264,10 @@ class Controller:
     
     def scan_memory_chunk(self, start_addr, end_addr, proc_info, path_info):
         """Scan a chunk of memory for sensitive information"""
+        # Record scan start time for timeline
+        if self.timeline_tracker:
+            scan_start_time = time.time()
+        
         # Read memory
         data = self.process_ops.read_memory_region(start_addr, end_addr)
         if not data or len(data) < 4:  # Need at least a few bytes to be worth scanning
@@ -273,8 +283,62 @@ class Controller:
         memory_str = self.misc.strip_non_ascii(memory_str)
         
         # Apply regex patterns
-        self.regex_lookup.search_regex(memory_str, proc_info)
+        findings = self.regex_lookup.search_regex_with_details(memory_str, proc_info)
+        
+        # Record findings in timeline
+        if self.timeline_tracker and findings:
+            timestamp = time.time()
+            
+            # Extract PID from proc_info
+            pid = proc_info
+            if ' ' in proc_info:
+                pid = proc_info.split(' ')[0]
+                
+            # Record each finding
+            for finding in findings:
+                self.timeline_tracker.record_finding(
+                    timestamp=timestamp,
+                    pid=pid,
+                    pattern_type=finding['pattern'],
+                    match_data=finding['match'],
+                    memory_region=f"0x{start_addr:x}-0x{end_addr:x} ({path_info})"
+                )
+        
+        # Record scan end time for timeline
+        if self.timeline_tracker:
+            scan_end_time = time.time()
+            pid = None
+            if ' ' in proc_info:
+                pid = proc_info.split(' ')[0]
+            else:
+                try:
+                    pid = int(proc_info)
+                except ValueError:
+                    pid = None
+                    
+            self.timeline_tracker.record_scan_interval(
+                start_time=scan_start_time,
+                end_time=scan_end_time,
+                process_id=pid,
+                scan_type=f"Memory region: 0x{start_addr:x}-0x{end_addr:x}"
+            )
     
     def get_result_count(self):
         """Get the total number of results found"""
         return self.regex_lookup.get_result_count()
+    
+    def save_timeline_data(self):
+        """Save timeline data if timeline tracking is enabled"""
+        if not self.timeline_tracker:
+            return
+        
+        # Generate timeline files
+        if self.options.timeline_json:
+            self.timeline_tracker.save_timeline_data(self.options.timeline_json)
+
+        if self.options.timeline_html:
+            self.timeline_tracker.generate_html_timeline(self.options.timeline_html)
+        elif self.options.timeline_json:
+            # If HTML file not specified but JSON is, create HTML with the same base name
+            html_path = os.path.splitext(self.options.timeline_json)[0] + '.html'
+            self.timeline_tracker.generate_html_timeline(html_path)

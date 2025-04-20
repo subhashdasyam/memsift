@@ -48,6 +48,17 @@ class ArgParser:
                           help="Write output to specified file")
         output.add_argument("-i", "--show-info", action="store_true", 
                           help="Show detailed process information")
+        
+        # Timeline options
+        timeline = self.parser.add_argument_group("Timeline Options")
+        timeline.add_argument("-t", "--timeline", action="store_true",
+                            help="Enable timeline tracking of sensitive data")
+        timeline.add_argument("--timeline-json", type=str,
+                            help="Save timeline data to specified JSON file")
+        timeline.add_argument("--timeline-html", type=str,
+                            help="Generate HTML timeline visualization to specified file")
+        timeline.add_argument("--timeline-interval", type=int, default=60,
+                            help="Interval in seconds for periodic scanning in timeline mode (default: 60)")
     
     def parse_args(self):
         """Parse command-line arguments and update options"""
@@ -63,7 +74,12 @@ class ArgParser:
         self.options.output_format = args.output_format
         self.options.output_file = args.output_file
         self.options.show_process_info = args.show_info
-        
+
+        # Timeline options
+        self.options.enable_timeline = args.timeline if hasattr(args, 'timeline') else False
+        self.options.timeline_json = args.timeline_json if hasattr(args, 'timeline_json') else None
+        self.options.timeline_html = args.timeline_html if hasattr(args, 'timeline_html') else None
+        self.options.timeline_scan_interval = args.timeline_interval if hasattr(args, 'timeline_interval') else 60        
         # Validate arguments
         self._validate_args()
         
@@ -92,3 +108,18 @@ class ArgParser:
         if self.options.pid_str and self.options.process_name:
             print("[!] Error: Cannot specify both PID and process name. Please use only one.")
             sys.exit(1)
+        
+        # If timeline options are specified, enable timeline tracking
+        if self.options.timeline_json or self.options.timeline_html:
+            self.options.enable_timeline = True
+            
+        # Check for jinja2 requirement for HTML timeline
+        if self.options.timeline_html or (self.options.enable_timeline and not self.options.timeline_json):
+            try:
+                import jinja2
+            except ImportError:
+                print("[!] Warning: Jinja2 library required for HTML timeline generation.")
+                print("[!] Install with: pip install jinja2")
+                if not self.options.timeline_json:
+                    print("[!] Falling back to JSON-only timeline output.")
+                    self.options.timeline_json = "memsift_timeline.json"

@@ -23,6 +23,11 @@ class Options:
         self.output_format = "plain"  # Default output format
         self.output_file = None  # Output file path
         self.show_process_info = False  # Show detailed process information
+        self.enable_timeline = False  # Enable timeline tracking
+        self.timeline_json = None     # JSON output file for timeline data
+        self.timeline_html = None     # HTML output file for timeline visualization
+        self.timeline_scan_interval = 60  # Interval (seconds) for periodic scanning when in timeline mode
+
 
     def __str__(self):
         """String representation of current options"""

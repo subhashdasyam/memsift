@@ -16,6 +16,7 @@ def signal_handler(sig, frame):
     print("\n[!] Keyboard interrupt detected, exiting...")
     sys.exit(0)
 
+# Update the main function to save timeline data at the end
 def main():
     # Configure signal handler for graceful exit
     signal.signal(signal.SIGINT, signal_handler)
@@ -46,22 +47,41 @@ def main():
     controller = Controller(options, regex_lookup, misc)
     
     # Start scanning
-    if options.pid_list:
-        # Scan specific PIDs
-        if len(options.pid_list) == 1:
-            # Single PID
-            controller.scan_process(options.pid_list[0])
+    try:
+        if options.pid_list:
+            # Scan specific PIDs
+            if len(options.pid_list) == 1:
+                # Single PID
+                controller.scan_process(options.pid_list[0])
+            else:
+                # Multiple PIDs
+                controller.scan_multiple_pids(options.pid_list)
+        elif options.process_name:
+            # Scan processes by name
+            controller.scan_processes_by_name(options.process_name)
         else:
-            # Multiple PIDs
-            controller.scan_multiple_pids(options.pid_list)
-    elif options.process_name:
-        # Scan processes by name
-        controller.scan_processes_by_name(options.process_name)
-    else:
-        # Scan all processes
-        controller.scan_all_processes()
+            # Scan all processes
+            controller.scan_all_processes()
+        
+        print(f"[*] Scan complete. Results: {controller.get_result_count()}")
+
+        # Save timeline data if enabled
+        if options.enable_timeline:
+            controller.save_timeline_data()
     
-    print(f"[*] Scan complete. Results: {controller.get_result_count()}")
+    except KeyboardInterrupt:
+        print("\n[!] Scan interrupted by user")
+        # Still save any timeline data we've collected so far
+        if options.enable_timeline:
+            controller.save_timeline_data()
+    except Exception as e:
+        print(f"[!] Error during scan: {str(e)}")
+        if options.verbose:
+            import traceback
+            traceback.print_exc()
+        # Still save any timeline data we've collected so far
+        if options.enable_timeline:
+            controller.save_timeline_data()
 
 if __name__ == "__main__":
     main()

@@ -45,6 +45,19 @@ sudo python memsift.py -p 1234 -i
 
 # For more options
 python memsift.py --help
+
+# Basic usage - scan a specific process with timeline tracking
+sudo python memsift.py -p 1234 -t --timeline-html timeline.html
+
+# Scan multiple processes and save timeline data
+sudo python memsift.py -p 1234,5678,9012 -t --timeline-html visualization.html
+
+# Scan all processes and save both raw JSON and HTML visualization
+sudo python memsift.py -a -t --timeline-json data.json --timeline-html report.html
+
+# Set custom interval for regular scanning (every 30 seconds)
+sudo python memsift.py -p 1234 -t --timeline-interval 30 --timeline-html timeline.html
+
 ```
 
 ## Requirements

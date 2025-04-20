@@ -113,6 +113,34 @@ class RegexLookup:
                 if match and len(match) > 3:  # Minimum reasonable length
                     self.results[pattern_name].add((match, process_info))
     
+    def search_regex_with_details(self, data, process_info=""):
+        """Apply all loaded regex patterns and return detailed findings"""
+        if not data:
+            return []
+        
+        findings = []
+        for i, pattern in enumerate(self.patterns):
+            pattern_name = self.pattern_names[i]
+            matches = pattern.findall(data)
+            
+            # Add unique matches to results and return findings
+            for match in matches:
+                if isinstance(match, tuple):  # If the pattern has groups
+                    match = ''.join(match)
+                
+                # Only add non-empty matches
+                if match and len(match) > 3:  # Minimum reasonable length
+                    self.results[pattern_name].add((match, process_info))
+                    
+                    # Add to findings list
+                    findings.append({
+                        'pattern': pattern_name,
+                        'match': match,
+                        'process_info': process_info
+                    })
+        
+        return findings
+    
     def get_results(self):
         """Get all unique results"""
         all_results = []
